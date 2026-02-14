@@ -6,7 +6,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
@@ -26,7 +26,7 @@ import java.lang.reflect.Method;
 public class AOPUtils {
 
     private static final ExpressionParser PARSER = new SpelExpressionParser();
-    private static final ParameterNameDiscoverer DISCOVERER = new LocalVariableTableParameterNameDiscoverer();
+    private static final ParameterNameDiscoverer DISCOVERER = new DefaultParameterNameDiscoverer();
 
     public static String parseRealClassName(JoinPoint joinPoint) {
         return joinPoint.getSignature().getDeclaringType().getSimpleName();

@@ -30,9 +30,9 @@ import tech.powerjob.server.web.request.QueryInstanceRequest;
 import tech.powerjob.server.web.response.InstanceDetailVO;
 import tech.powerjob.server.web.response.InstanceInfoVO;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.net.URL;
 import java.util.List;

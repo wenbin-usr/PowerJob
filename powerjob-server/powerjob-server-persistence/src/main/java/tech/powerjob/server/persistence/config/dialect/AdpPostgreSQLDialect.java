@@ -1,9 +1,10 @@
 package tech.powerjob.server.persistence.config.dialect;
 
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.hibernate.type.descriptor.sql.LongVarbinaryTypeDescriptor;
-import org.hibernate.type.descriptor.sql.LongVarcharTypeDescriptor;
-import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.type.descriptor.jdbc.JdbcType;
+import org.hibernate.type.descriptor.jdbc.LongVarbinaryJdbcType;
+import org.hibernate.type.descriptor.jdbc.LongVarcharJdbcType;
+import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 
 import java.sql.Types;
 
@@ -14,24 +15,23 @@ import java.sql.Types;
  * @author litong0531
  * @since 2024/8/11
  */
-public class AdpPostgreSQLDialect extends PostgreSQL10Dialect {
+public class AdpPostgreSQLDialect extends PostgreSQLDialect {
 
-    public AdpPostgreSQLDialect() {
-        super();
-        registerColumnType(Types.BLOB, "bytea");
-        registerColumnType(Types.CLOB, "text");
+    @Override
+    protected String columnType(int sqlTypeCode) {
+        return switch (sqlTypeCode) {
+            case Types.BLOB -> "bytea";
+            case Types.CLOB, Types.NCLOB -> "text";
+            default -> super.columnType(sqlTypeCode);
+        };
     }
 
     @Override
-    public SqlTypeDescriptor remapSqlTypeDescriptor(SqlTypeDescriptor sqlTypeDescriptor) {
-        switch (sqlTypeDescriptor.getSqlType()) {
-            case Types.CLOB:
-                return LongVarcharTypeDescriptor.INSTANCE;
-            case Types.BLOB:
-                return LongVarbinaryTypeDescriptor.INSTANCE;
-            case Types.NCLOB:
-                return LongVarbinaryTypeDescriptor.INSTANCE;
-        }
-        return super.remapSqlTypeDescriptor(sqlTypeDescriptor);
+    public JdbcType resolveSqlTypeDescriptor(String columnTypeName, int jdbcTypeCode, int precision, int scale, JdbcTypeRegistry jdbcTypeRegistry) {
+        return switch (jdbcTypeCode) {
+            case Types.CLOB -> LongVarcharJdbcType.INSTANCE;
+            case Types.BLOB, Types.NCLOB -> LongVarbinaryJdbcType.INSTANCE;
+            default -> super.resolveSqlTypeDescriptor(columnTypeName, jdbcTypeCode, precision, scale, jdbcTypeRegistry);
+        };
     }
 }

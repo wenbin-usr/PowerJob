@@ -21,8 +21,8 @@ import tech.powerjob.server.persistence.remote.repository.WorkflowInfoRepository
 import tech.powerjob.server.web.request.QueryWorkflowInfoRequest;
 import tech.powerjob.server.web.response.WorkflowInfoVO;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,8 +1,9 @@
 package tech.powerjob.server.persistence.config.dialect;
 
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.hibernate.type.descriptor.sql.LongVarcharTypeDescriptor;
-import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.type.descriptor.jdbc.JdbcType;
+import org.hibernate.type.descriptor.jdbc.LongVarcharJdbcType;
+import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 
 import java.sql.Types;
 
@@ -15,7 +16,7 @@ import java.sql.Types;
  * 2021/3/24 下午 04:23
  * 1074_King
  */
-public class PowerJobPGDialect extends PostgreSQL10Dialect {
+public class PowerJobPGDialect extends PostgreSQLDialect {
 
     /**
      * 使用 {@link Types#LONGVARCHAR} 覆盖 {@link Types#CLOB} 类型
@@ -27,7 +28,14 @@ public class PowerJobPGDialect extends PostgreSQL10Dialect {
      * 更多内容请关注该 issues：https://github.com/PowerJob/PowerJob/issues/153
      */
     @Override
-    public SqlTypeDescriptor getSqlTypeDescriptorOverride(int sqlCode) {
-        return Types.CLOB == sqlCode ? LongVarcharTypeDescriptor.INSTANCE : null;
+    protected String columnType(int sqlTypeCode) {
+        return sqlTypeCode == Types.CLOB ? "text" : super.columnType(sqlTypeCode);
+    }
+
+    @Override
+    public JdbcType resolveSqlTypeDescriptor(String columnTypeName, int jdbcTypeCode, int precision, int scale, JdbcTypeRegistry jdbcTypeRegistry) {
+        return jdbcTypeCode == Types.CLOB
+                ? LongVarcharJdbcType.INSTANCE
+                : super.resolveSqlTypeDescriptor(columnTypeName, jdbcTypeCode, precision, scale, jdbcTypeRegistry);
     }
 }
