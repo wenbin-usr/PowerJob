@@ -7,6 +7,7 @@ import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.enums.TimeExpressionType;
 import tech.powerjob.common.enums.WorkflowNodeType;
 import tech.powerjob.common.model.PEWorkflowDAG;
+import tech.powerjob.common.utils.CommonUtils;
 import tech.powerjob.server.common.utils.SpringUtils;
 import tech.powerjob.server.core.DispatchService;
 import tech.powerjob.server.core.instance.InstanceService;
@@ -33,6 +34,7 @@ public class JobNodeHandler implements TaskNodeHandler {
         // instanceParam 传递的是工作流实例的 wfContext
         Long instanceId = SpringUtils.getBean(InstanceService.class).create(node.getJobId(), wfInstanceInfo.getAppId(), node.getNodeParams(), wfInstanceInfo.getWfContext(), wfInstanceInfo.getWfInstanceId(), System.currentTimeMillis(), null, null).getInstanceId();
         node.setInstanceId(instanceId);
+        node.setStartTime(CommonUtils.formatTime(System.currentTimeMillis()));
         node.setStatus(InstanceStatus.RUNNING.getV());
         log.info("[Workflow-{}|{}] create readyNode(JOB) instance(nodeId={},jobId={},instanceId={}) successfully~", wfInstanceInfo.getWorkflowId(), wfInstanceInfo.getWfInstanceId(), node.getNodeId(), node.getJobId(), instanceId);
     }
