@@ -44,6 +44,9 @@ build/
 */.trc
 powerjob-data/
 
-powerjob-server/powerjob-server-starter/src/main/resources/application-dev.properties
+**/application-dev.properties
 .claude/**
 CLAUDE.md
+
+.cursor/**
+.opencode/**
