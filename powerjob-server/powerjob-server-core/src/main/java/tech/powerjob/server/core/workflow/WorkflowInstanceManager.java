@@ -11,11 +11,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import tech.powerjob.common.SystemInstanceResult;
 import tech.powerjob.common.WorkflowContextConstant;
+import tech.powerjob.common.enums.InstanceLimitStrategy;
 import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.enums.WorkflowInstanceStatus;
 import tech.powerjob.common.enums.WorkflowNodeType;
 import tech.powerjob.common.exception.PowerJobException;
 import tech.powerjob.common.model.PEWorkflowDAG;
+import tech.powerjob.common.model.WorkflowAdvancedRuntimeConfig;
 import tech.powerjob.common.serialize.JsonUtils;
 import tech.powerjob.common.utils.CommonUtils;
 import tech.powerjob.common.enums.SwitchableStatus;
@@ -237,6 +239,14 @@ public class WorkflowInstanceManager {
             // 并发度控制
             int instanceConcurrency = workflowInstanceInfoRepository.countByWorkflowIdAndStatusIn(wfInfo.getId(), WorkflowInstanceStatus.GENERALIZED_RUNNING_STATUS);
             if (instanceConcurrency > wfInfo.getMaxWfInstanceNum()) {
+                // 读取超限策略配置
+                InstanceLimitStrategy strategy = parseInstanceLimitStrategy(wfInfo.getExtra());
+                if (strategy == InstanceLimitStrategy.WAIT) {
+                    // 排队等待，保持 WAITING 状态，由后台任务自动重试
+                    log.warn("[Workflow-{}|{}] too many instances ({} > {}), will retry later.", wfInfo.getId(), wfInstanceId, instanceConcurrency, wfInfo.getMaxWfInstanceNum());
+                    return;
+                }
+                // 默认 FAIL 策略（前向兼容）
                 handleWfInstanceFinalStatus(wfInstanceInfo, String.format(SystemInstanceResult.TOO_MANY_INSTANCES, instanceConcurrency, wfInfo.getMaxWfInstanceNum()), WorkflowInstanceStatus.FAILED);
                 return;
             }
@@ -483,6 +493,25 @@ public class WorkflowInstanceManager {
             }
         }
         return true;
+    }
+
+    /**
+     * 解析工作流实例超限策略
+     *
+     * @param extra 扩展配置 JSON（存储 WorkflowAdvancedRuntimeConfig）
+     * @return 超限策略，默认 FAIL
+     */
+    private InstanceLimitStrategy parseInstanceLimitStrategy(String extra) {
+        if (StringUtils.isEmpty(extra)) {
+            return InstanceLimitStrategy.FAIL;
+        }
+        try {
+            WorkflowAdvancedRuntimeConfig config = JsonUtils.parseObject(extra, WorkflowAdvancedRuntimeConfig.class);
+            return InstanceLimitStrategy.of(config.getInstanceLimitStrategy());
+        } catch (Exception e) {
+            log.warn("[WorkflowInstanceManager] failed to parse extra config: {}", extra, e);
+            return InstanceLimitStrategy.FAIL;
+        }
     }
 
 }

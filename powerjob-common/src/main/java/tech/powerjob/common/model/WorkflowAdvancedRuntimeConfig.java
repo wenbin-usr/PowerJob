@@ -6,21 +6,16 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 /**
- * 任务运行时高级配置
+ * 工作流运行时高级配置
  *
- * @author tjq
- * @since 2024/2/24
+ * @author Echo009
+ * @since 2025/3/7
  */
 @Getter
 @Setter
 @ToString
 @Accessors(chain = true)
-public class JobAdvancedRuntimeConfig {
-
-    /**
-     * MR 任务专享参数，TaskTracker 行为 {@link tech.powerjob.common.enums.TaskTrackerBehavior}
-     */
-    private Integer taskTrackerBehavior;
+public class WorkflowAdvancedRuntimeConfig {
 
     /**
      * 超过最大实例数时的处理策略 {@link tech.powerjob.common.enums.InstanceLimitStrategy}

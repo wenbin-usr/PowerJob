@@ -10,10 +10,13 @@ import org.springframework.util.CollectionUtils;
 import tech.powerjob.common.RemoteConstant;
 import tech.powerjob.common.SystemInstanceResult;
 import tech.powerjob.common.enums.ExecuteType;
+import tech.powerjob.common.enums.InstanceLimitStrategy;
 import tech.powerjob.common.enums.InstanceStatus;
 import tech.powerjob.common.enums.ProcessorType;
 import tech.powerjob.common.enums.TimeExpressionType;
+import tech.powerjob.common.model.JobAdvancedRuntimeConfig;
 import tech.powerjob.common.request.ServerScheduleJobReq;
+import tech.powerjob.common.serialize.JsonUtils;
 import tech.powerjob.remote.framework.base.URL;
 import tech.powerjob.server.common.Holder;
 import tech.powerjob.server.common.module.WorkerInfo;
@@ -137,10 +140,18 @@ public class DispatchService {
             // 不统计 WAITING_DISPATCH 的状态：使用 OpenAPI 触发的延迟任务不应该统计进去（比如 delay 是 1 天）
             // 由于不统计 WAITING_DISPATCH，所以这个 runningInstanceCount 不包含本任务自身
             long runningInstanceCount = instanceInfoRepository.countByJobIdAndStatusIn(jobId, Lists.newArrayList(WAITING_WORKER_RECEIVE.getV(), RUNNING.getV()));
-            // 超出最大同时运行限制，不执行调度
+            // 超出最大同时运行限制
             if (runningInstanceCount >= maxInstanceNum) {
+                // 读取超限策略配置
+                InstanceLimitStrategy strategy = parseInstanceLimitStrategy(jobInfo.getAdvancedRuntimeConfig());
+                if (strategy == InstanceLimitStrategy.WAIT) {
+                    // 排队等待，保持 WAITING_DISPATCH 状态，由后台任务自动重试
+                    log.warn("[Dispatcher-{}|{}] too many instances ({} >= {}), will retry later.", jobId, instanceId, runningInstanceCount, maxInstanceNum);
+                    return;
+                }
+                // 默认 FAIL 策略（前向兼容）
                 String result = String.format(SystemInstanceResult.TOO_MANY_INSTANCES, runningInstanceCount, maxInstanceNum);
-                log.warn("[Dispatcher-{}|{}] cancel dispatch job due to too much instance is running ({} > {}).", jobId, instanceId, runningInstanceCount, maxInstanceNum);
+                log.warn("[Dispatcher-{}|{}] cancel dispatch job due to too much instance is running ({} >= {}).", jobId, instanceId, runningInstanceCount, maxInstanceNum);
                 instanceInfoRepository.update4TriggerFailed(instanceId, FAILED.getV(), current, current, RemoteConstant.EMPTY_ADDRESS, result, now);
                 instanceManager.processFinishedInstance(instanceId, instanceInfo.getWfInstanceId(), FAILED, result);
                 return;
@@ -231,5 +242,24 @@ public class DispatchService {
         req.setThreadConcurrency(jobInfo.getConcurrency());
         req.setMeta(instanceInfo.getMeta());
         return req;
+    }
+
+    /**
+     * 解析任务实例超限策略
+     *
+     * @param advancedRuntimeConfig 高级运行时配置 JSON
+     * @return 超限策略，默认 FAIL
+     */
+    private InstanceLimitStrategy parseInstanceLimitStrategy(String advancedRuntimeConfig) {
+        if (StringUtils.isBlank(advancedRuntimeConfig)) {
+            return InstanceLimitStrategy.FAIL;
+        }
+        try {
+            JobAdvancedRuntimeConfig config = JsonUtils.parseObject(advancedRuntimeConfig, JobAdvancedRuntimeConfig.class);
+            return InstanceLimitStrategy.of(config.getInstanceLimitStrategy());
+        } catch (Exception e) {
+            log.warn("[Dispatcher] failed to parse advancedRuntimeConfig: {}", advancedRuntimeConfig, e);
+            return InstanceLimitStrategy.FAIL;
+        }
     }
 }

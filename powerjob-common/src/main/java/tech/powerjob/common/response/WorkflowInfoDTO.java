@@ -1,6 +1,7 @@
 package tech.powerjob.common.response;
 
 import tech.powerjob.common.model.PEWorkflowDAG;
+import tech.powerjob.common.model.WorkflowAdvancedRuntimeConfig;
 import lombok.Data;
 
 import java.util.Date;
@@ -70,4 +71,9 @@ public class WorkflowInfoDTO {
      * status 字段的转义
      */
     private Boolean enable;
+
+    /**
+     * 高级运行时配置
+     */
+    private WorkflowAdvancedRuntimeConfig advancedRuntimeConfig;
 }

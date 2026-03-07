@@ -14,6 +14,8 @@ import tech.powerjob.common.model.LifeCycle;
 import tech.powerjob.common.model.PEWorkflowDAG;
 import tech.powerjob.common.request.http.SaveWorkflowNodeRequest;
 import tech.powerjob.common.request.http.SaveWorkflowRequest;
+import tech.powerjob.common.model.WorkflowAdvancedRuntimeConfig;
+import tech.powerjob.common.serialize.JsonUtils;
 import tech.powerjob.server.common.SJ;
 import tech.powerjob.common.enums.SwitchableStatus;
 import tech.powerjob.server.common.timewheel.holder.InstanceTimeWheelService;
@@ -87,6 +89,10 @@ public class WorkflowService {
         }
         if (req.getLifeCycle() != null) {
             wf.setLifecycle(JSON.toJSONString(req.getLifeCycle()));
+        }
+        // 处理高级运行时配置，复用 extra 字段存储
+        if (req.getAdvancedRuntimeConfig() != null) {
+            wf.setExtra(JSON.toJSONString(req.getAdvancedRuntimeConfig()));
         }
         if (TimeExpressionType.FREQUENT_TYPES.contains(req.getTimeExpressionType().getV())) {
             // 固定频率类型的任务不计算
